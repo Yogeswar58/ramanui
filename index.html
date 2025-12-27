@@ -1,376 +1,429 @@
-<!-- simple_agent_test_ui.html
-A very simple UI designed for early-stage agents to understand & control.
-- Big, clearly labeled buttons
-- Predictable element IDs + data-testid
-- Minimal layout, strong status signals
-- Built-in log + a simple “live counter” to verify progress
-Open this file in any browser.
+<!-- simple_agent_test_ui_with_graph.html
+Simple early-stage agent UI + live graph (no external libs).
+Open in any browser.
 -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Agent Test UI — Simple Control Panel</title>
+  <title>Agent Test UI — Simple Control Panel (with Graph)</title>
   <style>
-    :root {
-      --bg: #0b1020;
-      --card: #121a2e;
-      --border: rgba(255,255,255,.12);
-      --text: #e9f0ff;
-      --muted: #a8b4d6;
-      --ok: #39d07d;
-      --warn: #ffcc66;
-      --bad: #ff6b6b;
-      --btn: rgba(255,255,255,.08);
-      --btnHover: rgba(255,255,255,.12);
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    :root{
+      --bg:#0b1020; --card:#121a2e; --border:rgba(255,255,255,.12);
+      --text:#e9f0ff; --muted:#a8b4d6;
+      --ok:#39d07d; --warn:#ffcc66; --bad:#ff6b6b;
+      --btn:rgba(255,255,255,.08); --btnHover:rgba(255,255,255,.12);
+      --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      --sans:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: var(--sans);
-      background: var(--bg);
-      color: var(--text);
-    }
-    header {
-      padding: 16px 18px;
-      border-bottom: 1px solid var(--border);
-    }
-    h1 { margin: 0; font-size: 16px; }
-    .sub { margin-top: 6px; color: var(--muted); font-size: 12px; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--text)}
+    header{padding:16px 18px;border-bottom:1px solid var(--border)}
+    h1{margin:0;font-size:16px}
+    .sub{margin-top:6px;color:var(--muted);font-size:12px}
 
-    main {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 18px;
-      display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 14px;
+    main{
+      max-width:1100px;margin:0 auto;padding:18px;
+      display:grid;grid-template-columns:360px 1fr;gap:14px;
     }
-    @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 900px){ main{grid-template-columns:1fr} }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+    .title{margin:0 0 10px 0;font-size:13px;color:var(--muted);letter-spacing:.2px}
+
+    .status{
+      display:flex;align-items:center;gap:10px;padding:10px 12px;
+      border:1px solid var(--border);border-radius:12px;background:rgba(0,0,0,.18);margin-bottom:12px;
     }
-    .title {
-      margin: 0 0 10px 0;
-      font-size: 13px;
-      color: var(--muted);
-      letter-spacing: .2px;
+    .dot{width:12px;height:12px;border-radius:999px;background:var(--warn)}
+    .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)}
+    .statusText{font-weight:800}
+    .statusMeta{margin-left:auto;color:var(--muted);font-size:12px;font-family:var(--mono)}
+
+    .btnRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    button{
+      border:1px solid var(--border);background:var(--btn);color:var(--text);
+      padding:12px;border-radius:12px;font-size:14px;font-weight:800;
+      cursor:pointer;transition:background .15s ease;
+    }
+    button:hover{background:var(--btnHover)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .primary{border-color:rgba(57,208,125,.35)}
+    .danger{border-color:rgba(255,107,107,.35)}
+
+    label{display:grid;gap:6px;font-size:12px;color:var(--muted);margin-top:10px}
+    input,select{
+      padding:10px;border-radius:10px;border:1px solid var(--border);
+      background:rgba(0,0,0,.18);color:var(--text);outline:none;
     }
 
-    /* Status banner (clear signals for agent) */
-    .status {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: rgba(0,0,0,.18);
-      margin-bottom: 12px;
+    .kv{
+      margin-top:12px;display:grid;grid-template-columns:1fr auto;gap:8px 10px;
+      color:var(--muted);font-size:12px;padding-top:10px;border-top:1px solid var(--border);
     }
-    .dot { width: 12px; height: 12px; border-radius: 999px; background: var(--warn); }
-    .dot.ok { background: var(--ok); }
-    .dot.bad { background: var(--bad); }
-    .statusText { font-weight: 700; }
-    .statusMeta { margin-left: auto; color: var(--muted); font-size: 12px; font-family: var(--mono); }
+    .kv b{color:var(--text);font-family:var(--mono)}
 
-    /* Big controls */
-    .btnRow {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+    .log{
+      font-family:var(--mono);font-size:12px;background:rgba(0,0,0,.18);
+      border:1px solid var(--border);border-radius:12px;padding:10px;
+      height:170px;overflow:auto;white-space:pre-wrap;
     }
-    button {
-      border: 1px solid var(--border);
-      background: var(--btn);
-      color: var(--text);
-      padding: 12px 12px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background .15s ease;
-    }
-    button:hover { background: var(--btnHover); }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    .primary { border-color: rgba(57,208,125,.35); }
-    .danger { border-color: rgba(255,107,107,.35); }
 
-    /* Simple fields */
-    label {
-      display: grid;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 10px;
+    .hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.35}
+    .kbd{
+      font-family:var(--mono);padding:2px 6px;border-radius:8px;border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
     }
-    input, select {
-      padding: 10px 10px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: rgba(0,0,0,.18);
-      color: var(--text);
-      outline: none;
-    }
-    .kv {
-      margin-top: 12px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px 10px;
-      color: var(--muted);
-      font-size: 12px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-    }
-    .kv b { color: var(--text); font-family: var(--mono); }
 
-    /* Log */
-    .log {
-      font-family: var(--mono);
-      font-size: 12px;
-      background: rgba(0,0,0,.18);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px;
-      height: 280px;
-      overflow: auto;
-      white-space: pre-wrap;
+    .graphWrap{margin-top:10px}
+    canvas{
+      width:100%;height:300px;display:block;
+      border:1px solid var(--border);border-radius:12px;background:rgba(0,0,0,.18);
     }
-    .hint {
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
-    }
-    .kbd {
-      font-family: var(--mono);
-      padding: 2px 6px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.06);
+    .graphMeta{
+      display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;
+      color:var(--muted);font-size:12px;margin-top:8px;
+      font-family:var(--mono);
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Agent Test UI — Simple Control Panel</h1>
-    <div class="sub">Designed for early-stage automation: clear state, big controls, minimal ambiguity.</div>
-  </header>
+<header>
+  <h1>Agent Test UI — Simple Control Panel (with Graph)</h1>
+  <div class="sub">Early-stage friendly: big buttons, stable IDs, clear status + live chart.</div>
+</header>
 
-  <main>
-    <!-- LEFT: Controls -->
-    <section class="card" aria-label="Control Panel">
-      <p class="title">SYSTEM STATUS</p>
-      <div class="status" data-testid="status-banner">
-        <span id="statusDot" class="dot" aria-hidden="true"></span>
-        <span id="statusText" class="statusText" data-testid="status-text">DISCONNECTED</span>
-        <span id="statusMeta" class="statusMeta" data-testid="status-meta">idle</span>
+<main>
+  <!-- LEFT: Controls -->
+  <section class="card" aria-label="Control Panel">
+    <p class="title">SYSTEM STATUS</p>
+    <div class="status" data-testid="status-banner">
+      <span id="statusDot" class="dot" aria-hidden="true"></span>
+      <span id="statusText" class="statusText" data-testid="status-text">DISCONNECTED</span>
+      <span id="statusMeta" class="statusMeta" data-testid="status-meta">idle</span>
+    </div>
+
+    <p class="title">ACTIONS</p>
+    <div class="btnRow">
+      <button id="btnConnect" class="primary" data-testid="btn-connect" type="button">Connect</button>
+      <button id="btnStart" class="primary" data-testid="btn-start" type="button" disabled>Start</button>
+      <button id="btnStop" class="danger" data-testid="btn-stop" type="button" disabled>Stop</button>
+      <button id="btnSave" data-testid="btn-save" type="button" disabled>Save</button>
+    </div>
+
+    <label>
+      Mode
+      <select id="mode" data-testid="field-mode">
+        <option value="live" selected>Live</option>
+        <option value="single">Single</option>
+      </select>
+    </label>
+
+    <label>
+      Sample Name
+      <input id="sample" data-testid="field-sample" type="text" placeholder="e.g., Test Sample 1" autocomplete="off" />
+    </label>
+
+    <label>
+      Power (%)
+      <input id="power" data-testid="field-power" type="number" min="0" max="100" step="5" value="30" />
+    </label>
+
+    <div class="kv" aria-label="Metrics">
+      <div>Counter</div><b id="mCounter" data-testid="metric-counter">—</b>
+      <div>Last Save</div><b id="mSaved" data-testid="metric-saved">—</b>
+      <div>Power</div><b id="mPower" data-testid="metric-power">30%</b>
+      <div>Mode</div><b id="mMode" data-testid="metric-mode">live</b>
+    </div>
+
+    <div class="hint">
+      Keyboard shortcuts:
+      <span class="kbd">C</span> Connect/Disconnect,
+      <span class="kbd">L</span> Start/Stop,
+      <span class="kbd">V</span> Save,
+      <span class="kbd">R</span> Reset graph
+    </div>
+  </section>
+
+  <!-- RIGHT: Graph + Log -->
+  <section class="card" aria-label="Graph and Log">
+    <p class="title">LIVE GRAPH (Signal vs Time)</p>
+
+    <div class="graphWrap">
+      <canvas id="graph" width="1200" height="520" data-testid="graph-canvas" aria-label="Signal graph"></canvas>
+      <div class="graphMeta">
+        <div id="graphStatus" data-testid="graph-status">graph: idle</div>
+        <div id="graphInfo" data-testid="graph-info">points: 0</div>
       </div>
+    </div>
 
-      <p class="title">ACTIONS</p>
-      <div class="btnRow">
-        <button id="btnConnect" class="primary" data-testid="btn-connect" type="button">Connect</button>
-        <button id="btnStart" class="primary" data-testid="btn-start" type="button" disabled>Start</button>
-        <button id="btnStop" class="danger" data-testid="btn-stop" type="button" disabled>Stop</button>
-        <button id="btnSave" data-testid="btn-save" type="button" disabled>Save</button>
-      </div>
+    <p class="title" style="margin-top:14px;">EVENT LOG</p>
+    <div id="log" class="log" role="log" aria-live="polite" data-testid="event-log"></div>
 
-      <label>
-        Mode
-        <select id="mode" data-testid="field-mode">
-          <option value="live" selected>Live</option>
-          <option value="single">Single</option>
-        </select>
-      </label>
+    <div class="hint">
+      Suggested test: “Connect → Start → set Power to 60 → wait 5 seconds → Save → Stop”.
+      Verify the graph moves while RUNNING and stops when stopped.
+    </div>
+  </section>
+</main>
 
-      <label>
-        Sample Name
-        <input id="sample" data-testid="field-sample" type="text" placeholder="e.g., Test Sample 1" autocomplete="off" />
-      </label>
+<script>
+  // Helpers
+  const $ = (id) => document.getElementById(id);
+  const now = () => new Date().toLocaleTimeString();
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 
-      <label>
-        Power (%)
-        <input id="power" data-testid="field-power" type="number" min="0" max="100" step="5" value="30" />
-      </label>
+  function log(msg){
+    const el = $("log");
+    el.textContent += `[${now()}] ${msg}\n`;
+    el.scrollTop = el.scrollHeight;
+  }
 
-      <div class="kv" aria-label="Metrics">
-        <div>Counter</div><b id="mCounter" data-testid="metric-counter">—</b>
-        <div>Last Save</div><b id="mSaved" data-testid="metric-saved">—</b>
-        <div>Power</div><b id="mPower" data-testid="metric-power">30%</b>
-        <div>Mode</div><b id="mMode" data-testid="metric-mode">live</b>
-      </div>
+  function setStatus(type, text, meta){
+    const dot = $("statusDot");
+    dot.classList.remove("ok","bad");
+    if(type==="ok") dot.classList.add("ok");
+    if(type==="bad") dot.classList.add("bad");
+    $("statusText").textContent = text;
+    $("statusMeta").textContent = meta || "";
+  }
 
-      <div class="hint">
-        Keyboard shortcuts:
-        <span class="kbd">C</span> Connect/Disconnect,
-        <span class="kbd">L</span> Start/Stop,
-        <span class="kbd">V</span> Save
-      </div>
-    </section>
+  function setButtons(){
+    $("btnStart").disabled = !state.connected;
+    $("btnStop").disabled  = !state.running;
+    $("btnSave").disabled  = !state.connected;
+  }
 
-    <!-- RIGHT: Log -->
-    <section class="card" aria-label="Event Log">
-      <p class="title">EVENT LOG</p>
-      <div id="log" class="log" role="log" aria-live="polite" data-testid="event-log"></div>
-      <div class="hint">
-        Suggested agent test: “Connect → Start → set Power to 60 → Save → Stop”.
-      </div>
-    </section>
-  </main>
+  function updateMetrics(){
+    $("mCounter").textContent = state.connected ? String(state.counter) : "—";
+    $("mSaved").textContent = state.lastSaved || "—";
+    $("mPower").textContent = `${state.power}%`;
+    $("mMode").textContent = state.mode;
+  }
 
-  <script>
-    // ---------- Helpers ----------
-    const $ = (id) => document.getElementById(id);
-    const now = () => new Date().toLocaleTimeString();
+  // State
+  const state = {
+    connected:false,
+    running:false,
+    counter:0,
+    lastSaved:"",
+    mode:"live",
+    power:30,
+    timer:null,
 
-    function log(msg) {
-      const el = $("log");
-      el.textContent += `[${now()}] ${msg}\n`;
-      el.scrollTop = el.scrollHeight;
+    // graph series
+    t0: performance.now(),
+    points: [], // {t, y}
+    maxPoints: 180
+  };
+
+  // Graph drawing (very simple line chart)
+  function drawGraph(){
+    const canvas = $("graph");
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width, h = canvas.height;
+    const pad = 44;
+
+    // background
+    ctx.clearRect(0,0,w,h);
+
+    // axes box
+    ctx.strokeStyle = "rgba(255,255,255,.18)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad,pad,w-2*pad,h-2*pad);
+
+    // grid
+    ctx.strokeStyle = "rgba(255,255,255,.07)";
+    for(let i=1;i<5;i++){
+      const gx = pad + i*(w-2*pad)/5;
+      const gy = pad + i*(h-2*pad)/5;
+      ctx.beginPath(); ctx.moveTo(gx,pad); ctx.lineTo(gx,h-pad); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad,gy); ctx.lineTo(w-pad,gy); ctx.stroke();
     }
 
-    function setStatus(type, text, meta) {
-      const dot = $("statusDot");
-      dot.classList.remove("ok","bad");
-      if (type === "ok") dot.classList.add("ok");
-      if (type === "bad") dot.classList.add("bad");
-      $("statusText").textContent = text;
-      $("statusMeta").textContent = meta || "";
+    // labels
+    ctx.fillStyle = "rgba(255,255,255,.60)";
+    ctx.font = "12px " + getComputedStyle(document.documentElement).getPropertyValue("--mono");
+    ctx.fillText("time →", w - pad - 70, h - pad + 22);
+    ctx.fillText("signal", pad, pad - 10);
+
+    const pts = state.points;
+    $("graphInfo").textContent = `points: ${pts.length}`;
+    $("graphStatus").textContent = state.running ? "graph: RUNNING" : (state.connected ? "graph: connected" : "graph: idle");
+
+    if(pts.length < 2) return;
+
+    // find ranges
+    const tMin = pts[0].t;
+    const tMax = pts[pts.length-1].t;
+    let yMin = Infinity, yMax = -Infinity;
+    for(const p of pts){ yMin = Math.min(yMin, p.y); yMax = Math.max(yMax, p.y); }
+    const ySpan = Math.max(1e-6, yMax - yMin);
+    yMin -= 0.08*ySpan; yMax += 0.10*ySpan;
+
+    const xToPx = (t)=> pad + (t - tMin) / Math.max(1e-6,(tMax - tMin)) * (w - 2*pad);
+    const yToPx = (y)=> (h - pad) - (y - yMin) / (yMax - yMin) * (h - 2*pad);
+
+    // line
+    ctx.strokeStyle = "rgba(91,214,255,.95)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(xToPx(pts[0].t), yToPx(pts[0].y));
+    for(let i=1;i<pts.length;i++){
+      ctx.lineTo(xToPx(pts[i].t), yToPx(pts[i].y));
     }
+    ctx.stroke();
 
-    function setButtons() {
-      $("btnStart").disabled = !state.connected;
-      $("btnStop").disabled  = !state.running;
-      $("btnSave").disabled  = !state.connected;
-    }
+    // last point marker
+    const last = pts[pts.length-1];
+    const lx = xToPx(last.t);
+    const ly = yToPx(last.y);
+    ctx.fillStyle = "rgba(57,208,125,.95)";
+    ctx.beginPath(); ctx.arc(lx, ly, 4.5, 0, Math.PI*2); ctx.fill();
 
-    function updateMetrics() {
-      $("mCounter").textContent = state.running ? String(state.counter) : (state.connected ? "0" : "—");
-      $("mSaved").textContent = state.lastSaved || "—";
-      $("mPower").textContent = `${state.power}%`;
-      $("mMode").textContent = state.mode;
-    }
+    // y range text
+    ctx.textAlign = "right";
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.fillText(`y: ${yMin.toFixed(2)}..${yMax.toFixed(2)}`, w - pad, pad - 10);
+    ctx.textAlign = "left";
+  }
 
-    // ---------- State ----------
-    const state = {
-      connected: false,
-      running: false,
-      counter: 0,
-      lastSaved: "",
-      mode: "live",
-      power: 30,
-      timer: null
-    };
+  function resetGraph(){
+    state.points = [];
+    drawGraph();
+    log("Graph reset.");
+  }
 
-    // ---------- Actions ----------
-    function connectToggle() {
-      if (!state.connected) {
-        state.connected = true;
-        setStatus("ok", "CONNECTED", "ready");
-        $("btnConnect").textContent = "Disconnect";
-        log("Connected (simulated).");
-      } else {
-        stop();
-        state.connected = false;
-        setStatus("warn", "DISCONNECTED", "idle");
-        $("btnConnect").textContent = "Connect";
-        log("Disconnected.");
-      }
-      setButtons();
-      updateMetrics();
-    }
+  // Simulated signal: depends on power, plus noise, plus slow drift
+  function computeSignal(){
+    const p = state.power / 100;   // 0..1
+    const t = (performance.now() - state.t0) / 1000;
+    const base = 0.2 + 0.9*p;
+    const wave = 0.25*p*Math.sin(t*2.0) + 0.10*Math.sin(t*0.5);
+    const noise = (Math.random()*2 - 1) * (0.05 + 0.08*p);
+    return base + wave + noise;
+  }
 
-    function start() {
-      if (!state.connected || state.running) return;
-      state.running = true;
+  function pushPoint(){
+    const t = (performance.now() - state.t0) / 1000; // seconds
+    const y = computeSignal();
+    state.points.push({t, y});
+    if(state.points.length > state.maxPoints) state.points.shift();
+    drawGraph();
+  }
+
+  // Actions
+  function connectToggle(){
+    if(!state.connected){
+      state.connected = true;
       state.counter = 0;
-      setStatus("ok", "RUNNING", `mode=${state.mode}`);
-      log("Started.");
-      setButtons();
-      updateMetrics();
-
-      const interval = state.mode === "live" ? 250 : 600;
-      state.timer = setInterval(() => {
-        state.counter += 1;
-        $("mCounter").textContent = String(state.counter);
-      }, interval);
+      setStatus("ok","CONNECTED","ready");
+      $("btnConnect").textContent = "Disconnect";
+      log("Connected (simulated).");
+    } else {
+      stop();
+      state.connected = false;
+      setStatus("warn","DISCONNECTED","idle");
+      $("btnConnect").textContent = "Connect";
+      log("Disconnected.");
     }
-
-    function stop() {
-      if (!state.running) return;
-      state.running = false;
-      if (state.timer) clearInterval(state.timer);
-      state.timer = null;
-      setStatus(state.connected ? "ok" : "warn", state.connected ? "CONNECTED" : "DISCONNECTED", state.connected ? "ready" : "idle");
-      log("Stopped.");
-      setButtons();
-      updateMetrics();
-    }
-
-    function save() {
-      if (!state.connected) return;
-      const sample = ($("sample").value || "sample").replace(/[^\w\-]+/g, "_");
-      const payload = `sample=${sample}\nmode=${state.mode}\npower=${state.power}\ncounter=${state.counter}\n`;
-      const blob = new Blob([payload], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `agent_test_${sample}_${Date.now()}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-
-      state.lastSaved = now();
-      log("Saved file.");
-      updateMetrics();
-    }
-
-    // ---------- Wire up controls ----------
-    $("btnConnect").addEventListener("click", connectToggle);
-    $("btnStart").addEventListener("click", start);
-    $("btnStop").addEventListener("click", stop);
-    $("btnSave").addEventListener("click", save);
-
-    $("mode").addEventListener("change", (e) => {
-      state.mode = e.target.value;
-      log(`Mode set to ${state.mode}.`);
-      if (state.running) setStatus("ok", "RUNNING", `mode=${state.mode}`);
-      updateMetrics();
-    });
-
-    $("power").addEventListener("input", (e) => {
-      const v = Number(e.target.value);
-      state.power = Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 30;
-      log(`Power set to ${state.power}%.`);
-      updateMetrics();
-    });
-
-    // Keyboard shortcuts: C connect, L start/stop, V save
-    window.addEventListener("keydown", (e) => {
-      const tag = (document.activeElement && document.activeElement.tagName) || "";
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-
-      const k = e.key.toLowerCase();
-      if (k === "c") connectToggle();
-      if (k === "l") state.running ? stop() : start();
-      if (k === "v") save();
-    });
-
-    // ---------- Init ----------
-    setStatus("warn", "DISCONNECTED", "idle");
     setButtons();
     updateMetrics();
-    log("UI loaded. Press Connect to begin.");
-  </script>
+    drawGraph();
+  }
+
+  function start(){
+    if(!state.connected || state.running) return;
+    state.running = true;
+    setStatus("ok","RUNNING",`mode=${state.mode}`);
+    log("Started.");
+    setButtons();
+    updateMetrics();
+
+    // tick interval: live faster, single slower
+    const interval = state.mode === "live" ? 250 : 600;
+
+    // Push a point immediately, then at interval
+    pushPoint();
+    state.timer = setInterval(()=>{
+      state.counter += 1;
+      $("mCounter").textContent = String(state.counter);
+      pushPoint();
+    }, interval);
+  }
+
+  function stop(){
+    if(!state.running) return;
+    state.running = false;
+    if(state.timer) clearInterval(state.timer);
+    state.timer = null;
+    setStatus(state.connected ? "ok":"warn", state.connected ? "CONNECTED":"DISCONNECTED", state.connected ? "ready":"idle");
+    log("Stopped.");
+    setButtons();
+    updateMetrics();
+    drawGraph();
+  }
+
+  function save(){
+    if(!state.connected) return;
+    const sample = ($("sample").value || "sample").replace(/[^\w\-]+/g,"_");
+    const payload =
+      `sample=${sample}\nmode=${state.mode}\npower=${state.power}\ncounter=${state.counter}\npoints=${state.points.length}\n`;
+    const blob = new Blob([payload], {type:"text/plain;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `agent_test_${sample}_${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    state.lastSaved = now();
+    log("Saved file.");
+    updateMetrics();
+  }
+
+  // Wire buttons
+  $("btnConnect").addEventListener("click", connectToggle);
+  $("btnStart").addEventListener("click", start);
+  $("btnStop").addEventListener("click", stop);
+  $("btnSave").addEventListener("click", save);
+
+  $("mode").addEventListener("change", (e)=>{
+    state.mode = e.target.value;
+    log(`Mode set to ${state.mode}.`);
+    if(state.running) setStatus("ok","RUNNING",`mode=${state.mode}`);
+    updateMetrics();
+  });
+
+  $("power").addEventListener("input", (e)=>{
+    const v = Number(e.target.value);
+    state.power = Number.isFinite(v) ? clamp(v,0,100) : 30;
+    log(`Power set to ${state.power}%.`);
+    updateMetrics();
+    if(state.connected && !state.running) { pushPoint(); } // show immediate change
+  });
+
+  // Keyboard shortcuts (ignore when typing)
+  window.addEventListener("keydown", (e)=>{
+    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+    const k = e.key.toLowerCase();
+    if(k==="c") connectToggle();
+    if(k==="l") state.running ? stop() : start();
+    if(k==="v") save();
+    if(k==="r") resetGraph();
+  });
+
+  // Init
+  setStatus("warn","DISCONNECTED","idle");
+  setButtons();
+  updateMetrics();
+  drawGraph();
+  log("UI loaded. Press Connect to begin.");
+</script>
 </body>
 </html>
