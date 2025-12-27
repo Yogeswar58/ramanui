@@ -1,0 +1,805 @@
+<!-- raman_live_ui.html
+A simple, standalone Raman sensor “live” UI to test your agent.
+No external libraries. Open this file in any browser.
+-->
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Raman Sensor — Live UI (Test)</title>
+    <style>
+        :root {
+            --bg: #0b1220;
+            --panel: #111b2e;
+            --panel2: #0f1730;
+            --text: #e7eefc;
+            --muted: #9fb0d0;
+            --accent: #5bd6ff;
+            --ok: #48d17a;
+            --warn: #ffcc66;
+            --bad: #ff6b6b;
+            --border: rgba(255, 255, 255, .10);
+            --shadow: 0 10px 30px rgba(0, 0, 0, .25);
+            --radius: 14px;
+            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 700px at 15% 10%, rgba(91, 214, 255, .18), transparent 60%),
+                radial-gradient(900px 600px at 90% 0%, rgba(72, 209, 122, .12), transparent 55%),
+                var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+        }
+
+        header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            background: rgba(11, 18, 32, .75);
+            z-index: 10;
+        }
+
+        header .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 18px;
+            letter-spacing: .3px;
+        }
+
+        .sub {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .04);
+            font-size: 12px;
+            color: var(--muted);
+            user-select: none;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--warn);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, .06);
+        }
+
+        .dot.ok {
+            background: var(--ok);
+        }
+
+        .dot.bad {
+            background: var(--bad);
+        }
+
+        main {
+            padding: 22px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 980px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .03));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .panel h2 {
+            margin: 0;
+            padding: 14px 14px 10px;
+            font-size: 14px;
+            letter-spacing: .3px;
+        }
+
+        .panel .content {
+            padding: 12px 14px 14px;
+        }
+
+        .form {
+            display: grid;
+            gap: 10px;
+        }
+
+        label {
+            display: grid;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, .20);
+            color: var(--text);
+            outline: none;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        textarea {
+            min-height: 70px;
+            resize: vertical;
+            font-family: var(--sans);
+        }
+
+        .row2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btnrow {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        button {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .06);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: .2px;
+            transition: transform .05s ease, background .2s ease;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, .10);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button.primary {
+            border-color: rgba(91, 214, 255, .35);
+            background: rgba(91, 214, 255, .18);
+        }
+
+        button.danger {
+            border-color: rgba(255, 107, 107, .35);
+            background: rgba(255, 107, 107, .14);
+        }
+
+        button:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px 10px;
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .kv b {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .chartWrap {
+            padding: 14px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 420px;
+            display: block;
+            background: rgba(0, 0, 0, .18);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .chartMeta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .mono {
+            font-family: var(--mono);
+        }
+
+        .log {
+            font-family: var(--mono);
+            font-size: 12px;
+            background: rgba(0, 0, 0, .22);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            max-height: 190px;
+            overflow: auto;
+            white-space: pre-wrap;
+            color: #cfe1ff;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .footerHint {
+            margin-top: 14px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .kbd {
+            font-family: var(--mono);
+            border: 1px solid var(--border);
+            padding: 2px 6px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, .06);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="row">
+            <div>
+                <h1>Raman Sensor — Live UI (Test)</h1>
+                <div class="sub">Simulated live spectrum + simple controls for agent testing</div>
+            </div>
+
+            <div class="pill" aria-label="Connection status">
+                <span id="connDot" class="dot"></span>
+                <span id="connText">DISCONNECTED</span>
+                <span class="mono" id="connDetail" style="opacity:.9;"></span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="grid">
+            <!-- Controls -->
+            <section class="panel" aria-label="Controls panel">
+                <h2>Controls</h2>
+                <div class="content">
+                    <form class="form" onsubmit="return false;">
+                        <div class="row2">
+                            <label>
+                                Sample Name
+                                <input id="sampleName" type="text" placeholder="e.g., Acetaminophen batch A"
+                                    autocomplete="off" />
+                            </label>
+                            <label>
+                                Mode
+                                <select id="mode">
+                                    <option value="live">Live</option>
+                                    <option value="single">Single Scan</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="row2">
+                            <label>
+                                Integration Time (ms)
+                                <input id="integrationMs" type="number" min="10" max="5000" step="10" value="250" />
+                            </label>
+                            <label>
+                                Averages
+                                <input id="averages" type="number" min="1" max="50" step="1" value="5" />
+                            </label>
+                        </div>
+
+                        <label>
+                            Laser Power (%)
+                            <input id="laserPower" type="range" min="0" max="100" value="35" />
+                            <span class="mono" id="laserPowerVal">35%</span>
+                        </label>
+
+                        <div class="row2">
+                            <label>
+                                Wavenumber Range (cm⁻¹)
+                                <select id="range">
+                                    <option value="200-2000">200 – 2000</option>
+                                    <option value="400-1800">400 – 1800</option>
+                                    <option value="100-3200">100 – 3200</option>
+                                </select>
+                            </label>
+                            <label>
+                                Baseline Correction
+                                <select id="baseline">
+                                    <option value="off">Off</option>
+                                    <option value="simple" selected>Simple</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <label>
+                            Notes
+                            <textarea id="notes" placeholder="Optional notes..."></textarea>
+                        </label>
+
+                        <div class="btnrow" aria-label="Primary actions">
+                            <button id="btnConnect" class="primary" type="button">Connect</button>
+                            <button id="btnStart" class="primary" type="button" disabled>Start Live</button>
+                            <button id="btnSingle" type="button" disabled>Single Scan</button>
+                            <button id="btnStop" class="danger" type="button" disabled>Stop</button>
+                            <button id="btnSave" type="button" disabled>Save CSV</button>
+                            <button id="btnClear" type="button">Clear Log</button>
+                        </div>
+
+                        <div class="kv" aria-label="Live metrics">
+                            <div>Frame</div><b class="mono" id="mFrame">—</b>
+                            <div>FPS</div><b class="mono" id="mFps">—</b>
+                            <div>Peak (cm⁻¹)</div><b class="mono" id="mPeakX">—</b>
+                            <div>Peak Intensity</div><b class="mono" id="mPeakY">—</b>
+                            <div>Noise (RMS)</div><b class="mono" id="mNoise">—</b>
+                        </div>
+
+                        <div class="footerHint hint">
+                            Tips for agent testing:
+                            <ul>
+                                <li>Try: “Connect”, then “Start Live”, adjust <span class="kbd">Laser Power</span>, then
+                                    “Save CSV”.</li>
+                                <li>Try: “Set Integration Time to 500 ms and run Single Scan.”</li>
+                            </ul>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Chart + Log -->
+            <section class="panel" aria-label="Spectrum panel">
+                <h2>Live Spectrum</h2>
+                <div class="chartWrap">
+                    <canvas id="chart" width="1200" height="520" aria-label="Raman spectrum chart"></canvas>
+
+                    <div class="chartMeta">
+                        <div>
+                            X: <span class="mono" id="xMeta">cm⁻¹</span> &nbsp;|&nbsp;
+                            Y: <span class="mono">Intensity (a.u.)</span>
+                        </div>
+                        <div class="mono" id="statusMeta">Idle</div>
+                    </div>
+
+                    <h2 style="padding:14px 0 10px; margin:0;">Event Log</h2>
+                    <div id="log" class="log" role="log" aria-live="polite"></div>
+
+                    <div class="footerHint">
+                        Keyboard shortcuts:
+                        <span class="kbd">C</span> Connect,
+                        <span class="kbd">L</span> Start/Stop Live,
+                        <span class="kbd">S</span> Single Scan,
+                        <span class="kbd">V</span> Save CSV
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // ---------- Simple utilities ----------
+        const $ = (id) => document.getElementById(id);
+        const now = () => new Date().toLocaleTimeString();
+
+        function log(msg) {
+            const el = $("log");
+            el.textContent += `[${now()}] ${msg}\n`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function setConn(state, detail = "") {
+            const dot = $("connDot");
+            const text = $("connText");
+            const det = $("connDetail");
+            dot.classList.remove("ok", "bad");
+            if (state === "CONNECTED") dot.classList.add("ok");
+            if (state === "ERROR") dot.classList.add("bad");
+            text.textContent = state;
+            det.textContent = detail ? `(${detail})` : "";
+        }
+
+        function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+        // ---------- App state ----------
+        let connected = false;
+        let liveRunning = false;
+        let frame = 0;
+        let lastTick = performance.now();
+        let fps = 0;
+        let timer = null;
+
+        // Spectrum settings and data
+        let xStart = 200, xEnd = 2000;
+        let N = 800;
+        let xs = new Float32Array(N);
+        let ys = new Float32Array(N);
+
+        // Simulated peaks (cm-1)
+        const basePeaks = [
+            { mu: 520, amp: 0.85, sigma: 14 },
+            { mu: 1003, amp: 1.00, sigma: 18 },
+            { mu: 1605, amp: 0.72, sigma: 20 }
+        ];
+
+        function updateRange() {
+            const v = $("range").value;
+            const [a, b] = v.split("-").map(Number);
+            xStart = a; xEnd = b;
+            for (let i = 0; i < N; i++) {
+                xs[i] = xStart + (i / (N - 1)) * (xEnd - xStart);
+            }
+            $("xMeta").textContent = `${xStart}–${xEnd} cm⁻¹`;
+            draw(); // redraw
+        }
+
+        // ---------- Spectrum simulation ----------
+        function gaussian(x, mu, sigma) {
+            const z = (x - mu) / sigma;
+            return Math.exp(-0.5 * z * z);
+        }
+
+        function simulateSpectrum() {
+            const integ = Number($("integrationMs").value) || 250;
+            const avg = Number($("averages").value) || 5;
+            const laser = Number($("laserPower").value) || 35;
+            const baseline = $("baseline").value;
+
+            // Rough scaling: more laser + more integration => higher signal
+            const gain = (laser / 100) * (integ / 250) * (1 + Math.log10(avg + 1));
+
+            // Noise: decreases with sqrt(avg), increases slightly with gain (shot noise-ish)
+            const noiseSigma = 0.035 * (1 / Math.sqrt(Math.max(1, avg))) + 0.010 * gain;
+
+            // Drift peaks slightly over time
+            const t = frame * 0.03;
+
+            // baseline
+            for (let i = 0; i < N; i++) {
+                const x = xs[i];
+                const baselineVal = (baseline === "simple")
+                    ? (0.10 + 0.10 * (x - xStart) / (xEnd - xStart))
+                    : 0.0;
+
+                let y = baselineVal;
+
+                for (const p of basePeaks) {
+                    const mu = p.mu + 1.5 * Math.sin(t + p.mu * 0.001);
+                    const amp = p.amp * (0.85 + 0.25 * Math.sin(t * 0.4 + p.mu * 0.0007));
+                    y += gain * amp * gaussian(x, mu, p.sigma);
+                }
+
+                // Add a small fluorescence hump
+                y += 0.06 * gain * Math.exp(-0.0018 * (x - xStart));
+
+                // Add noise
+                y += noiseSigma * (Math.random() * 2 - 1);
+
+                ys[i] = y;
+            }
+
+            // Metrics
+            let peakI = -1e9, peakX = xs[0];
+            let sumSq = 0;
+            for (let i = 0; i < N; i++) {
+                const y = ys[i];
+                if (y > peakI) { peakI = y; peakX = xs[i]; }
+                sumSq += y * y;
+            }
+            const rms = Math.sqrt(sumSq / N);
+
+            $("mFrame").textContent = String(frame);
+            $("mFps").textContent = fps ? fps.toFixed(1) : "—";
+            $("mPeakX").textContent = peakX.toFixed(1);
+            $("mPeakY").textContent = peakI.toFixed(3);
+            $("mNoise").textContent = rms.toFixed(3);
+
+            $("statusMeta").textContent =
+                liveRunning ? `Live • integ=${integ}ms • avg=${avg} • laser=${laser}%` : "Idle";
+        }
+
+        // ---------- Chart drawing (Canvas 2D) ----------
+        function drawAxes(ctx, w, h, pad) {
+            ctx.save();
+            ctx.strokeStyle = "rgba(255,255,255,.20)";
+            ctx.lineWidth = 1;
+
+            // border
+            ctx.strokeRect(pad, pad, w - 2 * pad, h - 2 * pad);
+
+            // grid (5x)
+            ctx.strokeStyle = "rgba(255,255,255,.08)";
+            for (let i = 1; i < 5; i++) {
+                const x = pad + i * (w - 2 * pad) / 5;
+                const y = pad + i * (h - 2 * pad) / 5;
+                ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, h - pad); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+            }
+
+            // labels
+            ctx.fillStyle = "rgba(255,255,255,.65)";
+            ctx.font = "12px ui-monospace, Menlo, Consolas, monospace";
+            ctx.fillText(`${xStart} cm⁻¹`, pad, h - pad + 18);
+            ctx.textAlign = "right";
+            ctx.fillText(`${xEnd} cm⁻¹`, w - pad, h - pad + 18);
+            ctx.textAlign = "left";
+            ctx.fillText("Intensity (a.u.)", pad, pad - 8);
+
+            ctx.restore();
+        }
+
+        function draw() {
+            const canvas = $("chart");
+            const ctx = canvas.getContext("2d");
+            const w = canvas.width, h = canvas.height;
+            const pad = 44;
+
+            // clear
+            ctx.clearRect(0, 0, w, h);
+
+            drawAxes(ctx, w, h, pad);
+
+            // scale y
+            let yMin = Infinity, yMax = -Infinity;
+            for (let i = 0; i < N; i++) {
+                const y = ys[i];
+                if (y < yMin) yMin = y;
+                if (y > yMax) yMax = y;
+            }
+            // pad y range
+            const span = Math.max(1e-6, (yMax - yMin));
+            yMin -= 0.08 * span;
+            yMax += 0.10 * span;
+
+            function xToPx(x) {
+                return pad + (x - xStart) / (xEnd - xStart) * (w - 2 * pad);
+            }
+            function yToPx(y) {
+                return (h - pad) - (y - yMin) / (yMax - yMin) * (h - 2 * pad);
+            }
+
+            // line
+            ctx.save();
+            ctx.strokeStyle = "rgba(91,214,255,.95)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(xToPx(xs[0]), yToPx(ys[0]));
+            for (let i = 1; i < N; i++) ctx.lineTo(xToPx(xs[i]), yToPx(ys[i]));
+            ctx.stroke();
+
+            // peak marker
+            let peakI = -1e9, peakIdx = 0;
+            for (let i = 0; i < N; i++) {
+                if (ys[i] > peakI) { peakI = ys[i]; peakIdx = i; }
+            }
+            const px = xToPx(xs[peakIdx]);
+            const py = yToPx(ys[peakIdx]);
+
+            ctx.fillStyle = "rgba(72,209,122,.95)";
+            ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = "rgba(255,255,255,.80)";
+            ctx.font = "12px ui-monospace, Menlo, Consolas, monospace";
+            ctx.fillText(`Peak ${xs[peakIdx].toFixed(1)} cm⁻¹`, clamp(px + 10, pad, w - pad - 160), clamp(py - 10, pad + 12, h - pad - 8));
+
+            ctx.restore();
+
+            // y-range label (top right)
+            ctx.save();
+            ctx.fillStyle = "rgba(255,255,255,.55)";
+            ctx.textAlign = "right";
+            ctx.font = "12px ui-monospace, Menlo, Consolas, monospace";
+            ctx.fillText(`y: ${yMin.toFixed(2)} .. ${yMax.toFixed(2)}`, w - pad, pad - 8);
+            ctx.restore();
+        }
+
+        // ---------- Control wiring ----------
+        function setButtons() {
+            $("btnStart").disabled = !connected;
+            $("btnSingle").disabled = !connected || liveRunning;
+            $("btnStop").disabled = !connected || !liveRunning;
+            $("btnSave").disabled = !connected;
+        }
+
+        function connect() {
+            if (connected) return;
+            setConn("CONNECTED", "Simulated");
+            connected = true;
+            log("Connected to Raman sensor (simulated).");
+            setButtons();
+        }
+
+        function disconnect() {
+            if (!connected) return;
+            stopLive();
+            connected = false;
+            setConn("DISCONNECTED");
+            log("Disconnected.");
+            setButtons();
+        }
+
+        function tick() {
+            const t = performance.now();
+            const dt = t - lastTick;
+            lastTick = t;
+            fps = dt > 0 ? (1000 / dt) : 0;
+
+            frame += 1;
+            simulateSpectrum();
+            draw();
+        }
+
+        function startLive() {
+            if (!connected || liveRunning) return;
+            liveRunning = true;
+            log("Live acquisition started.");
+            // Update interval loosely based on integration time
+            const integ = Number($("integrationMs").value) || 250;
+            const interval = clamp(Math.round(integ * 0.6), 60, 1200);
+            timer = setInterval(tick, interval);
+            setButtons();
+            tick();
+        }
+
+        function stopLive() {
+            if (!liveRunning) return;
+            liveRunning = false;
+            if (timer) clearInterval(timer);
+            timer = null;
+            log("Live acquisition stopped.");
+            $("statusMeta").textContent = "Idle";
+            setButtons();
+        }
+
+        function singleScan() {
+            if (!connected || liveRunning) return;
+            log("Single scan started.");
+            tick();
+            log("Single scan complete.");
+        }
+
+        function saveCSV() {
+            if (!connected) return;
+            const sample = ($("sampleName").value || "sample").replace(/[^\w\-]+/g, "_");
+            const integ = $("integrationMs").value;
+            const avg = $("averages").value;
+            const laser = $("laserPower").value;
+            const range = $("range").value;
+            const notes = ($("notes").value || "").replace(/\r?\n/g, " ");
+
+            let csv = "meta_key,meta_value\n";
+            csv += `sample,${sample}\n`;
+            csv += `integration_ms,${integ}\n`;
+            csv += `averages,${avg}\n`;
+            csv += `laser_power_pct,${laser}\n`;
+            csv += `range,${range}\n`;
+            csv += `notes,${JSON.stringify(notes)}\n`;
+            csv += "\ncm-1,intensity\n";
+            for (let i = 0; i < N; i++) csv += `${xs[i].toFixed(2)},${ys[i].toFixed(6)}\n`;
+
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `raman_${sample}_${Date.now()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+
+            log("Saved CSV file.");
+        }
+
+        // Buttons
+        $("btnConnect").addEventListener("click", () => {
+            if (!connected) connect();
+            else disconnect();
+            $("btnConnect").textContent = connected ? "Disconnect" : "Connect";
+        });
+
+        $("btnStart").addEventListener("click", () => {
+            const mode = $("mode").value;
+            if (mode === "single") {
+                log("Mode is Single Scan; use 'Single Scan' button.");
+                return;
+            }
+            startLive();
+        });
+
+        $("btnStop").addEventListener("click", stopLive);
+        $("btnSingle").addEventListener("click", singleScan);
+        $("btnSave").addEventListener("click", saveCSV);
+        $("btnClear").addEventListener("click", () => { $("log").textContent = ""; });
+
+        // Settings live updates
+        $("laserPower").addEventListener("input", (e) => {
+            $("laserPowerVal").textContent = `${e.target.value}%`;
+            if (connected && !liveRunning) { simulateSpectrum(); draw(); }
+        });
+
+        $("range").addEventListener("change", updateRange);
+
+        // Keyboard shortcuts
+        window.addEventListener("keydown", (e) => {
+            // Ignore if typing in input/textarea
+            const tag = (document.activeElement && document.activeElement.tagName) || "";
+            if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+            if (e.key.toLowerCase() === "c") {
+                $("btnConnect").click();
+            } else if (e.key.toLowerCase() === "l") {
+                if (!connected) return;
+                if (liveRunning) stopLive(); else startLive();
+            } else if (e.key.toLowerCase() === "s") {
+                singleScan();
+            } else if (e.key.toLowerCase() === "v") {
+                saveCSV();
+            }
+        });
+
+        // Initialize
+        updateRange();
+        setConn("DISCONNECTED");
+        log("UI loaded. Press 'Connect' to begin (simulated).");
+    </script>
+</body>
+
+</html>
